@@ -6,21 +6,22 @@ import 'completed_screen.dart';
 import 'deleted_screen.dart';
 import 'important_screen.dart';
 
-
 class CustomDrawer extends StatelessWidget {
   final List<Task> completedTasks;
   final List<Task> deletedTasks;
-  final List<Task> starredTasks;
+  final List<Task> tasks;
 
   const CustomDrawer({
     super.key,
     required this.completedTasks,
     required this.deletedTasks,
-    required this.starredTasks,
+    required this.tasks,
   });
 
   @override
   Widget build(BuildContext context) {
+    final starredTasks = tasks.where((task) => task.isStarred && !deletedTasks.contains(task)).toList();
+
     return Drawer(
       backgroundColor: Colors.black,
       child: Column(
