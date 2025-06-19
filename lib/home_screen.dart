@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import 'task_model.dart';
-import 'completed_screen.dart';
-import 'deleted_screen.dart';
-import 'important_screen.dart';
 import 'custom_drawer.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -83,46 +80,53 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildReorderableItem(Task task) {
-    return Container(
-      key: ValueKey(task), // This is crucial for ReorderableListView
-      child: Dismissible(
-        key: UniqueKey(), // For swipe to delete
-        direction: DismissDirection.endToStart,
-        background: Container(
-          color: Colors.red,
-          alignment: Alignment.centerRight,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: const Icon(Icons.delete, color: Colors.white),
+  Widget _buildTaskItem(Task task) {
+    return Dismissible(
+      key: ValueKey(task.title + task.isDone.toString() + task.isStarred.toString()),
+      direction: DismissDirection.endToStart,
+      onDismissed: (_) => _deleteTask(task),
+      background: Container(
+        color: Colors.red,
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: const Icon(Icons.delete, color: Colors.white),
+      ),
+      child: ListTile(
+        key: ValueKey(task),
+        leading: Checkbox(
+          value: task.isDone,
+          onChanged: (_) => _toggleTask(task),
         ),
-        onDismissed: (_) => _deleteTask(task),
-        child: ListTile(
-          leading: Checkbox(
-            value: task.isDone,
-            onChanged: (_) => _toggleTask(task),
-          ),
-          title: AnimatedDefaultTextStyle(
-            duration: const Duration(milliseconds: 300),
-            style: task.isDone
-                ? const TextStyle(
-                    decoration: TextDecoration.lineThrough,
-                    color: Colors.grey,
-                    fontSize: 18,
-                  )
-                : const TextStyle(
-                    decoration: TextDecoration.none,
-                    color: Colors.white,
-                    fontSize: 18,
-                  ),
-            child: Text(task.title),
-          ),
-          trailing: IconButton(
-            icon: Icon(
-              task.isStarred ? Icons.star : Icons.star_border,
-              color: task.isStarred ? Colors.orange : Colors.grey,
+        title: AnimatedDefaultTextStyle(
+          duration: const Duration(milliseconds: 300),
+          style: task.isDone
+              ? const TextStyle(
+                  decoration: TextDecoration.lineThrough,
+                  color: Colors.grey,
+                  fontSize: 18,
+                )
+              : const TextStyle(
+                  decoration: TextDecoration.none,
+                  color: Colors.white,
+                  fontSize: 18,
+                ),
+          child: Text(task.title),
+        ),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            IconButton(
+              icon: Icon(
+                task.isStarred ? Icons.star : Icons.star_border,
+                color: task.isStarred ? Colors.orange : Colors.grey,
+              ),
+              onPressed: () => _toggleStar(task),
             ),
-            onPressed: () => _toggleStar(task),
-          ),
+            ReorderableDragStartListener(
+              index: _tasks.indexOf(task),
+              child: const Icon(Icons.drag_handle, color: Colors.grey),
+            ),
+          ],
         ),
       ),
     );
@@ -137,16 +141,17 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('My Tasks')),
       drawer: CustomDrawer(
-  completedTasks: _completedTasks,
-  deletedTasks: _deletedTasks,
-  tasks: _tasks, // This now matches the constructor
-),
-
+        completedTasks: _completedTasks,
+        deletedTasks: _deletedTasks,
+        tasks: _tasks,
+      ),
       body: _tasks.isEmpty
-          ? const Center(child: Text("No tasks. Tap + to add one!", style: TextStyle(fontSize: 18)))
+          ? const Center(
+              child: Text("No tasks. Tap + to add one!", style: TextStyle(fontSize: 18)),
+            )
           : ReorderableListView(
               padding: const EdgeInsets.symmetric(vertical: 10),
-              buildDefaultDragHandles: false, // Use long press instead
+              buildDefaultDragHandles: false,
               onReorder: (oldIndex, newIndex) {
                 setState(() {
                   if (newIndex > oldIndex) newIndex--;
@@ -154,15 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _tasks.insert(newIndex, task);
                 });
               },
-              children: _tasks.map((task) {
-                return GestureDetector(
-                  key: ValueKey(task),
-                  onLongPress: () {
-                    // Reorder handled automatically by ReorderableListView
-                  },
-                  child: _buildReorderableItem(task),
-                );
-              }).toList(),
+              children: _tasks.map((task) => _buildTaskItem(task)).toList(),
             ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 10.0, bottom: 50.0),
